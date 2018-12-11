@@ -35,27 +35,25 @@ namespace FileLoggerKata
 
             bool ShouldRotateWeekendLogs()
             {
-                return DateProvider.Today.DayOfWeek == DayOfWeek.Saturday && 
+                return IsWeekend(DateProvider.Today) &&
                        FileSystem.Exists(logFileName) &&
-                       FileSystem.GetLastWriteTime(logFileName).DayOfWeek == DayOfWeek.Sunday;
+                       (DateProvider.Today - FileSystem.GetLastWriteTime(logFileName)).Days > 2;
             }
         }
-        
+
         private string GetLogFileName()
         {
             var today = DateProvider.Today;
 
-            return IsWeekend()
+            return IsWeekend(today)
                 ? $"{WeekendLogFileName}.{LogExtension}"
-                : $"{LogFileName}{ToFileDateFormat(today)}.{LogExtension}";
-
-            bool IsWeekend() => today.DayOfWeek == DayOfWeek.Saturday || today.DayOfWeek == DayOfWeek.Sunday;
+                : $"{LogFileName}{ToFileDateFormat(today)}.{LogExtension}";            
         }
 
         private void ArchiveWeekendLog()
-        {            
-            var lastSaturday = DateProvider.Today.AddDays(-7);
-            var archivedFileName = $"{WeekendLogFileName}-{ToFileDateFormat(lastSaturday)}.{LogExtension}";
+        {
+            var lastWriteTime = FileSystem.GetLastWriteTime($"{WeekendLogFileName}.{LogExtension}");
+            var archivedFileName = $"{WeekendLogFileName}-{ToFileDateFormat(lastWriteTime)}.{LogExtension}";
             FileSystem.Rename($"{WeekendLogFileName}.{LogExtension}", archivedFileName);
         }
 
@@ -63,5 +61,7 @@ namespace FileLoggerKata
         {
             return date.ToString("yyyyMMdd");
         }
+
+        private static bool IsWeekend(DateTime date) => date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
     }
 }
